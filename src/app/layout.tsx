@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { SanityLive } from "@/sanity/live";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,6 +29,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        {/* SanityLive listens for content changes and calls revalidateTag automatically.
+            No manual webhook setup needed — Sanity pushes events, Next.js revalidates instantly. */}
+        <SanityLive />
       </body>
     </html>
   );

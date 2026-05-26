@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { sanityClient } from "@/sanity/client";
+import { sanityFetch } from "@/sanity/live";
 import RevalidateButton from "@/components/RevalidateButton";
 
 export const metadata: Metadata = {
@@ -25,19 +25,12 @@ type IsrDemoContent = {
   _updatedAt: string;
 };
 
-// Fetches directly from Sanity with the "isr-demo" cache tag.
-// When Sanity publishes → webhook calls /api/revalidate → revalidateTag("isr-demo", { expire: 0 })
-// → this fetch is instantly invalidated → next request gets fresh content.
+// Fetches from Sanity via defineLive's sanityFetch.
+// SanityLive (in layout.tsx) listens for Sanity content changes and
+// automatically calls revalidateTag() — no manual webhook needed.
 async function getIsrDemoContent(): Promise<IsrDemoContent | null> {
-  return sanityClient.fetch<IsrDemoContent>(
-    ISR_DEMO_QUERY,
-    {},
-    {
-      next: {
-        tags: ["isr-demo"], // This is what makes On-Demand ISR work on Vercel
-      },
-    }
-  );
+  const { data } = await sanityFetch({ query: ISR_DEMO_QUERY });
+  return data as IsrDemoContent | null;
 }
 
 export default async function Home() {
@@ -199,17 +192,17 @@ export default async function Home() {
                 </div>
                 <div>
                   <p className="text-white font-bold text-sm">This Site (Vercel)</p>
-                  <p className="text-emerald-400 text-xs font-mono">On-Demand ISR ✓ + Sanity Webhook</p>
+                  <p className="text-emerald-400 text-xs font-mono">On-Demand ISR ✓ + Sanity Live</p>
                 </div>
               </div>
 
               <p className="text-slate-300 text-sm mb-5 leading-relaxed">
-                Sanity publishes → webhook fires → <span className="text-emerald-400 font-semibold">cache invalidated instantly</span> → next visitor sees fresh content. No rebuild.
+                Sanity publishes → <span className="text-emerald-400 font-semibold">SanityLive detects the change</span> → cache invalidated instantly → next visitor sees fresh content. No webhook, no rebuild.
               </p>
 
               <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 p-3 text-center">
-                <p className="text-emerald-400 text-xs font-mono">⚡ revalidateTag("isr-demo", &#123; expire: 0 &#125;)</p>
-                <p className="text-slate-500 text-xs mt-1">Triggered by Sanity webhook on every publish</p>
+                <p className="text-emerald-400 text-xs font-mono">⚡ Sanity Live → auto revalidateTag()</p>
+                <p className="text-slate-500 text-xs mt-1">SanityLive detects every Sanity publish automatically</p>
               </div>
             </div>
 
@@ -261,9 +254,9 @@ export default async function Home() {
           <div className="space-y-3">
             {[
               { step: "1", label: "Page is built once at deploy time", detail: "The ISR Demo Content is fetched from Sanity and cached on Vercel's global edge network. Visitors get sub-50ms responses from the nearest PoP." },
-              { step: "2", label: "Editor publishes new content in Sanity", detail: "The editor hits 'Publish' in Sanity Studio. Sanity immediately fires a webhook to this website's /api/revalidate endpoint." },
-              { step: "3", label: 'revalidateTag("isr-demo", { expire: 0 }) is called', detail: "A single line of Next.js code tells Vercel: 'immediately expire all cached pages using the \"isr-demo\" tag'. This takes milliseconds." },
-              { step: "4", label: "Next visitor gets fresh content", detail: "The very next request to this page fetches fresh data from Sanity. Fresh content, zero full rebuild, zero developer involvement." },
+              { step: "2", label: "Editor publishes new content in Sanity", detail: "The editor hits 'Publish' in Sanity Studio. Sanity's Live API broadcasts a content-change event to all connected Next.js servers." },
+              { step: "3", label: "SanityLive detects the change automatically", detail: "The <SanityLive /> component (added once in layout.tsx) receives the event and calls revalidateTag() internally — no manual webhook, no route handler needed." },
+              { step: "4", label: "Next visitor gets fresh content instantly", detail: "The very next request to this page fetches fresh data from Sanity. Fresh content, zero full rebuild, zero developer involvement." },
             ].map((item) => (
               <div key={item.step} className="flex gap-4 items-start">
                 <div className="w-7 h-7 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-xs font-bold flex-shrink-0 mt-0.5">
@@ -278,13 +271,12 @@ export default async function Home() {
           </div>
 
           <div className="rounded-xl bg-black/40 border border-white/10 p-4 font-mono text-sm overflow-x-auto">
-            <p className="text-slate-500 text-xs mb-3">// src/app/api/revalidate/route.ts — the entire solution</p>
-            <p><span className="text-purple-400">import</span> <span className="text-yellow-300">{"{ revalidateTag }"}</span> <span className="text-purple-400">from</span> <span className="text-green-400">&apos;next/cache&apos;</span><span className="text-slate-400">;</span></p>
-            <p className="mt-2"><span className="text-purple-400">export async function</span> <span className="text-blue-400">POST</span><span className="text-white">() {"{"}</span></p>
-            <p className="ml-4"><span className="text-yellow-300">revalidateTag</span><span className="text-white">(</span><span className="text-green-400">&apos;isr-demo&apos;</span><span className="text-white">,</span> <span className="text-yellow-300">{"{ expire: 0 }"}</span><span className="text-white">);</span> <span className="text-slate-600">{"// ← Instant invalidation"}</span></p>
-            <p className="ml-4"><span className="text-purple-400">return</span> <span className="text-yellow-300">Response</span><span className="text-white">.</span><span className="text-blue-400">json</span><span className="text-white">{"({ revalidated: true })"}</span><span className="text-slate-400">;</span></p>
-            <p><span className="text-white">{"}"}</span></p>
-            <p className="mt-3 text-orange-400 text-xs">{"// On AWS Amplify: revalidateTag() is called but has no effect. Cache only expires by TTL."}</p>
+            <p className="text-slate-500 text-xs mb-3">// src/sanity/live.ts + src/app/layout.tsx — the entire solution</p>
+            <p><span className="text-purple-400">import</span> <span className="text-yellow-300">{"{ defineLive }"}</span> <span className="text-purple-400">from</span> <span className="text-green-400">&apos;next-sanity&apos;</span><span className="text-slate-400">;</span></p>
+            <p className="mt-2"><span className="text-purple-400">const</span> <span className="text-white">{"{ "}</span><span className="text-yellow-300">sanityFetch</span><span className="text-white">{"  , "}</span><span className="text-yellow-300">SanityLive</span><span className="text-white">{" }"}</span> <span className="text-white">=</span> <span className="text-blue-400">defineLive</span><span className="text-white">({"{ client }"})</span><span className="text-slate-400">;</span></p>
+            <p className="mt-2 text-slate-500 text-xs">{"// In layout.tsx:"}</p>
+            <p><span className="text-white">{"<"}</span><span className="text-blue-400">SanityLive</span> <span className="text-white">{"/>"}</span> <span className="text-slate-600">{"// ← listens for Sanity publishes, auto-revalidates"}</span></p>
+            <p className="mt-3 text-orange-400 text-xs">{"// On AWS Amplify: SanityLive calls revalidateTag() but Amplify ignores it. Cache only expires by TTL."}</p>
           </div>
         </section>
 
