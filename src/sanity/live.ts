@@ -1,3 +1,4 @@
+// @ts-expect-error - TS cannot find types for the live subpath due to next-sanity export map issues
 import { defineLive } from "next-sanity/live";
 import { sanityClient } from "./client";
 
