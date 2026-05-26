@@ -1,5 +1,6 @@
 // This is the On-Demand ISR revalidation endpoint
-// On Vercel → this works perfectly, invalidating only affected cached pages
+// Called by Sanity webhook when content is published
+// On Vercel → works perfectly, invalidating cached pages instantly
 // On AWS Amplify → this silently does nothing (the core problem!)
 
 import { revalidateTag } from "next/cache";
@@ -7,13 +8,14 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    // This single call tells Vercel's edge cache to invalidate
-    // ONLY pages that use the "news" tag — no full rebuild needed!
-    revalidateTag("news");
+    // Next.js 16: revalidateTag requires a second argument.
+    // { expire: 0 } = immediate expiry — required for webhook-triggered revalidation
+    // so the very next visitor gets fresh content, not stale-while-revalidate.
+    revalidateTag("isr-demo", { expire: 0 });
 
     return NextResponse.json({
       revalidated: true,
-      message: "Cache invalidated for tag: news",
+      message: "Cache invalidated for tag: isr-demo",
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
