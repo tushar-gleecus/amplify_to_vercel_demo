@@ -8,10 +8,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    // Next.js 16: revalidateTag requires a second argument.
-    // { expire: 0 } = immediate expiry — required for webhook-triggered revalidation
-    // so the very next visitor gets fresh content, not stale-while-revalidate.
-    revalidateTag("isr-demo", { expire: 0 });
+    revalidateTag("isr-demo");
 
     return NextResponse.json({
       revalidated: true,
