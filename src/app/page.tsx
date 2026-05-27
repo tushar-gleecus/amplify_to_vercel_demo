@@ -29,16 +29,21 @@ type IsrDemoContent = {
 // When Sanity publishes → webhook calls /api/revalidate → revalidateTag("isr-demo", { expire: 0 })
 // → this fetch is instantly invalidated → next request gets fresh content.
 async function getIsrDemoContent(): Promise<IsrDemoContent | null> {
-  return sanityClient.fetch<IsrDemoContent>(
-    ISR_DEMO_QUERY,
-    {},
-    {
-      cache: "force-cache",
-      next: {
-        tags: ["isr-demo"], // This is what makes On-Demand ISR work on Vercel
-      },
-    }
-  );
+  const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || "v1rb7aqk";
+  const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
+  // useCdn: false means we use the live API
+  const url = `https://${projectId}.api.sanity.io/v2025-02-19/data/query/${dataset}?query=${encodeURIComponent(ISR_DEMO_QUERY)}`;
+  
+  const res = await fetch(url, {
+    cache: "force-cache",
+    next: {
+      tags: ["isr-demo"], // This is what makes On-Demand ISR work on Vercel
+    },
+  });
+  
+  if (!res.ok) return null;
+  const json = await res.json();
+  return json.result || null;
 }
 
 export default async function Home() {

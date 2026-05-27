@@ -8,7 +8,12 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    revalidateTag("isr-demo");
+    // Add a small delay to ensure Sanity's persistence is finished before Next.js re-fetches
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // Next.js 16: revalidateTag requires a second argument.
+    // { expire: 0 } = immediate expiry — required for webhook-triggered revalidation
+    revalidateTag("isr-demo", { expire: 0 });
 
     return NextResponse.json({
       revalidated: true,
