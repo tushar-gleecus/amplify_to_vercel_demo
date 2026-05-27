@@ -33,6 +33,7 @@ async function getIsrDemoContent(): Promise<IsrDemoContent | null> {
     ISR_DEMO_QUERY,
     {},
     {
+      cache: "force-cache",
       next: {
         tags: ["isr-demo"], // This is what makes On-Demand ISR work on Vercel
       },
