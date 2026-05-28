@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { SanityLive } from "@/sanity/client";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,6 +29,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        {/* SanityLive opens a persistent SSE connection to Sanity's Live Content API.
+            When any content is published, it automatically calls router.refresh()
+            — updating the page instantly without any manual browser refresh. */}
+        <SanityLive />
       </body>
     </html>
   );

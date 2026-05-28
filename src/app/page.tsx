@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { sanityClient } from "@/sanity/client";
-import RevalidateButton from "@/components/RevalidateButton";
+import { sanityFetch } from "@/sanity/client";
 
 export const metadata: Metadata = {
   title: "On-Demand ISR Demo | Vercel vs AWS Amplify",
@@ -25,25 +24,13 @@ type IsrDemoContent = {
   _updatedAt: string;
 };
 
-// Fetches directly from Sanity with the "isr-demo" cache tag.
-// When Sanity publishes → webhook calls /api/revalidate → revalidateTag("isr-demo", { expire: 0 })
-// → this fetch is instantly invalidated → next request gets fresh content.
+// sanityFetch() is the correct way to fetch Sanity data in a Next.js + Vercel setup.
+// It automatically registers Sanity's content sync tags for the query result,
+// which means <SanityLive /> in layout.tsx knows exactly when to call router.refresh()
+// — giving instant, no-manual-refresh updates when content is published in Sanity Studio.
 async function getIsrDemoContent(): Promise<IsrDemoContent | null> {
-  const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || "v1rb7aqk";
-  const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
-  // useCdn: false means we use the live API
-  const url = `https://${projectId}.api.sanity.io/v2025-02-19/data/query/${dataset}?query=${encodeURIComponent(ISR_DEMO_QUERY)}`;
-  
-  const res = await fetch(url, {
-    cache: "force-cache",
-    next: {
-      tags: ["isr-demo"], // This is what makes On-Demand ISR work on Vercel
-    },
-  });
-  
-  if (!res.ok) return null;
-  const json = await res.json();
-  return json.result || null;
+  const { data } = await sanityFetch({ query: ISR_DEMO_QUERY });
+  return (data as IsrDemoContent) || null;
 }
 
 export default async function Home() {
@@ -249,16 +236,7 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* Manual revalidate button for demo */}
-        <section className="space-y-4">
-          <div className="text-center">
-            <h2 className="text-xl font-bold text-white mb-2">Manual Revalidate (Demo)</h2>
-            <p className="text-slate-400 text-sm">
-              Can&apos;t edit Sanity right now? Click to manually trigger cache invalidation and see the page refresh.
-            </p>
-          </div>
-          <RevalidateButton />
-        </section>
+
 
         {/* How it works */}
         <section className="rounded-2xl border border-white/10 bg-slate-900/50 p-8 space-y-6">
