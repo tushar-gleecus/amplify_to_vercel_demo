@@ -19,6 +19,7 @@ export const metadata: Metadata = {
 };
 
 import { revalidateSyncTagsAction } from "next-sanity/live/server-actions";
+import { revalidatePath } from "next/cache";
 
 export default function RootLayout({
   children,
@@ -39,12 +40,15 @@ export default function RootLayout({
             // 1. Revalidate the Next.js cache tags (using next-sanity's default action)
             await revalidateSyncTagsAction(unsafeTags);
             
-            // 2. Wait 1.5 seconds to ensure Vercel's Edge Network has fully propagated 
+            // 2. Forcefully revalidate the home page path to ensure Vercel Route Cache is busted
+            revalidatePath("/");
+            
+            // 3. Wait 1.5 seconds to ensure Vercel's Edge Network has fully propagated 
             // the cache invalidation across all global nodes.
             // Without this delay, the immediate router.refresh() might fetch stale data.
             await new Promise((resolve) => setTimeout(resolve, 1500));
             
-            // 3. Trigger router.refresh() in the browser to fetch the new content
+            // 4. Trigger router.refresh() in the browser to fetch the new content
             return "refresh";
           }}
         />
