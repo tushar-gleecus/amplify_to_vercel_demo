@@ -29,7 +29,10 @@ type IsrDemoContent = {
 // which means <SanityLive /> in layout.tsx knows exactly when to call router.refresh()
 // — giving instant, no-manual-refresh updates when content is published in Sanity Studio.
 async function getIsrDemoContent(): Promise<IsrDemoContent | null> {
-  const { data } = await sanityFetch({ query: ISR_DEMO_QUERY });
+  const { data } = await sanityFetch({ 
+    query: ISR_DEMO_QUERY,
+    tags: ["isr-demo"]
+  });
   return (data as IsrDemoContent) || null;
 }
 
