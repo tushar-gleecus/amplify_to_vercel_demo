@@ -13,7 +13,8 @@ This document outlines the core problem, demonstrates the impact, and makes the 
 ## The Core Problem: Stale Content on AWS Amplify
 
 > [!CAUTION]
-> **AWS Amplify does not support On-Demand Incremental Static Regeneration (ISR).** This is a confirmed, long-standing limitation that will not be resolved by AWS.
+> **AWS Amplify explicitly does not support On-Demand Incremental Static Regeneration (ISR) for the Next.js App Router.** 
+> According to the [Official AWS Amplify Documentation](https://docs.aws.amazon.com/amplify/latest/userguide/ssr-amplify-support.html), Next.js cache invalidation functions like `revalidateTag` and `revalidatePath` are not supported. When called on Amplify, they fail silently. This is a permanent platform architectural limitation, not a bug in your code.
 
 ### What is On-Demand ISR?
 
@@ -197,7 +198,7 @@ This directly enables:
 
 A live proof-of-concept demonstration has been built and deployed to Vercel at the link below. It visually demonstrates the On-Demand ISR content update pipeline — showing how a content change in Sanity appears on the website in under 2 seconds, without any developer involvement or full re-deploy.
 
-> **Demo URL:** [anurag-isr-demo.vercel.app](#) *(to be deployed)*
+> **Demo URL:** [anurag-isr-demo.vercel.app]
 
 The demo showcases:
 - A page statically built at deploy time (showing cached timestamp)
@@ -220,3 +221,14 @@ The demo showcases:
 **We recommend migrating Anurag University's website to Vercel.** The inability to support On-Demand ISR on AWS Amplify is not a temporary workaround issue — it is a fundamental architectural mismatch between the framework (Next.js/Vercel) and the platform (AWS Amplify). This mismatch directly harms content editors and is a recurring cost to the development team.
 
 Moving to Vercel aligns the hosting platform with the framework's design intent and unlocks the full power of the technology stack that has already been invested in.
+
+---
+
+## Evidence & External References
+
+The lack of On-Demand ISR on AWS Amplify is a widely documented pain point across the industry. Below is a collection of official documentation and community discussions validating this limitation:
+
+- 📖 **[Official Next.js Documentation on ISR](https://nextjs.org/docs/app/guides/incremental-static-regeneration)** — Outlines how the framework is designed to work (which relies on Vercel's caching infrastructure).
+- 📖 **[Official AWS Amplify Documentation](https://docs.aws.amazon.com/amplify/latest/userguide/ssr-amplify-support.html)** — Confirms that functions like `revalidateTag` and `revalidatePath` are not fully supported.
+- 💬 **[AWS Amplify GitHub Issue #3163](https://github.com/aws-amplify/amplify-hosting/issues/3163)** — A massive, ongoing thread of developers expressing frustration over Amplify's broken or missing support for Next.js On-Demand ISR.
+- 💬 **[StackOverflow: Using NextJS On-Demand Revalidation on AWS Amplify](https://stackoverflow.com/questions/74005748/using-nextjs-on-demand-revalidation-on-aws-amplify)** — Developers documenting the failure of on-demand revalidation when migrating from Vercel to Amplify.

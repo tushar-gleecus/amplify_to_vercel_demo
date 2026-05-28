@@ -136,6 +136,7 @@ export default async function Home() {
                 Sanity published at:{" "}
                 <span className="text-cyan-400">
                   {new Date(sanityUpdatedAt).toLocaleTimeString("en-IN", {
+                    timeZone: "Asia/Kolkata",
                     hour12: true,
                     hour: "2-digit",
                     minute: "2-digit",
@@ -151,6 +152,7 @@ export default async function Home() {
               Page rendered at:{" "}
               <span className="text-slate-400">
                 {new Date(pageRenderedAt).toLocaleTimeString("en-IN", {
+                  timeZone: "Asia/Kolkata",
                   hour12: true,
                   hour: "2-digit",
                   minute: "2-digit",
