@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { sanityFetch } from "@/sanity/client";
+import { sanityFetch } from "@/sanity/live";
 
 export const metadata: Metadata = {
   title: "On-Demand ISR Demo | Vercel vs AWS Amplify",
